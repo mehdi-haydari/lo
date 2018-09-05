@@ -35,6 +35,7 @@ $readyList         = sorting($weightNormalTable);
 $ct        = new CrossThreshold();
 $cschedule = $ct->runSchedule($tree, $readyList);
 
+// calculate with simulated annealing
 $sa       = new SimulatedAnnealing();
 $schedule = $sa->getSchedule($tree,[$cschedule]);
 

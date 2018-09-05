@@ -74,6 +74,7 @@ class WeightNormal {
         $weight    = $this->getWeight($task);
         $comWeight = 0;
                 
+        // exit node
         if(count($task->successor) == 0){
             return $weight;
         }

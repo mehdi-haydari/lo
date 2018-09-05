@@ -11,7 +11,7 @@
  */
 class CrossThreshold {
     private $peat               = [0,0]; //processor earliest available time
-    private $selectedprocessor = [];
+    private $selectedprocessor  = [];
     private $est                = [];
     private $eft                = [];
     public  $threshold          = 0.3;
@@ -27,7 +27,10 @@ class CrossThreshold {
         foreach ($table as $key => $task) {
             $eft  = $this->getEFT($task["task"],$tree);
             $meft = $this->getMinimumEFT($eft[$task["task"]]);
-            if($this->compareprocessorTime($tree[$task["task"]]->weight,$meft) == TRUE){
+
+            // check if this processor is fastest processor for this work
+            // regardless to communication time or est
+            if($this->compareProcessorTime($tree[$task["task"]]->weight,$meft) == TRUE){
                 if ($this->getCommunication($tree[$task["task"]],$meft["processor"]) == 0){
                     $this->peat[$meft["processor"]] = $eft[$task["task"]][$meft["processor"]];
                 } else {
@@ -36,21 +39,21 @@ class CrossThreshold {
                 $this->selectedprocessor[$task["task"]]["processor"]  = $meft["processor"];
                 $this->selectedprocessor[$task["task"]]["eft"]        = $meft["time"];
                 $this->selectedprocessor[$task["task"]]["task"]       = $task["task"];
-            } else {
+            } else { // give chance to minimum processor
                 $abstractWeight = $this->getAbstractWeight($task["task"], $tree);
                 $weight_ni      = $this->getWeight_ni($table,$task["task"]);
                 $crossThreshold = $this->getCrossThreshold($weight_ni, $abstractWeight);
-                if ($crossThreshold <= $this->threshold){
+                if ($crossThreshold <= $this->threshold){ // cross over
                     if ($this->getCommunication($tree[$task["task"]],$meft["processor"]) == 0){
                         $this->peat[$meft["processor"]] = $eft[$task["task"]][$meft["processor"]];
                     } else {
                         $this->peat[$meft["processor"]] = $eft[$task["task"]][$meft["processor"]]+$tree[$task["task"]]->weight[$meft["processor"]];
                     }
-                    $this->selectedprocessor[$task["task"]]["processor"] = $meft["processor"];
+                    $this->selectedprocessor[$task["task"]]["processor"]  = $meft["processor"];
                     $this->selectedprocessor[$task["task"]]["eft"]        = $meft["time"];
                     $this->selectedprocessor[$task["task"]]["task"]       = $task["task"];
                     $this->selectedprocessor[$task["task"]]["desc"]       = "cross over:".$crossThreshold;
-                } else {
+                } else { // no cross over
                     $mp = $this->getMinimumProcessor($tree[$task["task"]]);
                     if ($this->getCommunication($tree[$task["task"]],$mp["processor"]) == 0){
                         $this->peat[$mp["processor"]] = $eft[$task["task"]][$mp["processor"]];
@@ -147,7 +150,7 @@ class CrossThreshold {
      * @param array $selected
      * @return boolean
      */
-    private function compareprocessorTime($task,$selected)
+    private function compareProcessorTime($task,$selected)
     {
         $processor = $selected["processor"];
         $minimum   = $task[$selected["processor"]];
