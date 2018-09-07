@@ -6,12 +6,12 @@
 
 class SimulatedAnnealing 
 {
-    public $temprature       = 1;     //initial temorature
-    public $tempureReduction = 0.06;
+    public $temprature       = 1;   //initial temorature
 	public $maxPopulation    = 80;
-	public $cp               = 0.9;   //neighbore selection probablity
-	public $mp               = 0.6;   //mutation probablity
-	public $restarting       = 100;
+	public $cp               = 0.9;  //neighbore selection probablity
+	public $mp               = 0.6;  //mutation probablity
+	public $restarting       = 100;  
+    public $tempureReduction = 0.06;
     private $population      = [];
     private $bestSolution    = [];
     private $mainSolution    = [];
@@ -23,8 +23,12 @@ class SimulatedAnnealing
 		return $this;
 	}
 
+    /**
+     * return scheduled list of tasks
+     */
 	public function getSchedule($dag,$ct=NULL)
 	{
+        // if the ct schedule passed
         if($ct !== NULL){
             foreach ($ct as $c){
                 $this->population[] = $this->normalize($c);
@@ -37,10 +41,10 @@ class SimulatedAnnealing
         while($this->temprature > 0){
             $this->generateNeighbore($dag);
             
-            $bestNeighbore = $this->population[0];
+            $bestNeighbore         = $this->population[0];
             $bestNeighboreMakeSpan = $this->getMakespan($bestNeighbore, $dag);
-            $delta         = $mainMakeSpan - $bestNeighboreMakeSpan;
-            $prob          = (rand(0, 10)/10) - pow(2.71828, $delta * $this->temprature);
+            $delta                 = $mainMakeSpan - $bestNeighboreMakeSpan;
+            $prob                  = (rand(0, 10)/10) - pow(2.71828, $delta * $this->temprature);
             
             if($delta > 0 || $prob > 0){
                 $this->mainSolution = $bestNeighbore;
@@ -58,6 +62,9 @@ class SimulatedAnnealing
         return $this->makeSchedule(sortArrayByMakespan($this->population)[0],$dag);
 	}
 
+    /**
+     * initial more population for start
+     */
 	private function initial($dag)
 	{
         $this->population[] = $this->initialByMB($dag);
@@ -69,6 +76,9 @@ class SimulatedAnnealing
         $this->mainSolution = $this->population[1];
 	}
     
+    /**
+     * create new schedule based on current
+     */
     private function generateNeighbore($dag)
     {
         $this->crossover($dag);
@@ -76,6 +86,9 @@ class SimulatedAnnealing
         $this->fitness($dag);
     }
 
+    /**
+     * this function check is schedule runnable and sort population with makespan
+     */
     private function fitness($dag)
 	{
         foreach($this->population as $key=>$schedule){
@@ -95,6 +108,9 @@ class SimulatedAnnealing
         $this->population = $cTask;
 	}
 
+    /**
+     * change processor for processing
+     */
 	private function crossover($dag)
 	{
         $this->reorderArray();
@@ -102,20 +118,23 @@ class SimulatedAnnealing
         $inCount = count($this->population);
         for($i = 0;$i<$itr;$i++){
             if(rand(0,10) <= $this->cp*10 ) {
-                $crossNode = rand(0, count($dag) - 1);
-                $candidate = $this->getCrossCandidates($crossNode, $dag);
+                $crossNode   = rand(0, count($dag) - 1); // choose node between list of nodes in pop[$i]
+                $candidate   = $this->getCrossCandidates($crossNode, $dag); //get successors of pop[$i][$crossNode]
 
-                $crossGen = [];
+                $crossGen    = [];
                 $crossGen[0] = $this->population[$i];
                 $crossGen[1] = $this->population[$inCount - ($i + 1)];
 
-                $newGens = $this->mixGens($crossGen, $candidate);
+                $newGens            = $this->mixGens($crossGen, $candidate);
                 $this->population[] = $newGens[0];
                 $this->population[] = $newGens[1];
             }
         }
-	}
-
+    }
+    
+    /**
+     * find task with most idle time and change the processor with mp probablity
+     */
 	private function mutation($dag)
 	{
         $count = count($this->population);
@@ -129,6 +148,9 @@ class SimulatedAnnealing
         }
 	}
 
+    /**
+     * find task with most idle time and change the processor
+     */
     private function getMutated($sched,$dag)
     {
         $task      = null;
@@ -249,6 +271,7 @@ class SimulatedAnnealing
         return $newSchedule;
     }
 
+    // blend two gen and return new schedule
     private function mixGens($gens, $candidate)
     {
         $copy = $this->getCopy($gens, $candidate);
@@ -256,12 +279,13 @@ class SimulatedAnnealing
             if(isset($gen["makespan"])){
                 unset($gen["makespan"]);
             }
-            for($i=0;$i<count($gen);$i++){
+            for($i=0;$i<count($gen);$i++){ // find task place in x and place it in y
                 $rowCandid = $this->searchCandidPlace($candidate,$gens[$gi][$i]);
                 $copy[($gi == 1) ? 0 : 1][$i] = $this->addToPRC(($copy[($gi == 1) ? 0 : 1][$i]),$rowCandid);
             }
         }
 
+        // reorder new schedule
         $newSchedule = [];
         for($i=0;$i<count($copy);$i++){
             $newSchedule[$i] = [];
@@ -283,11 +307,14 @@ class SimulatedAnnealing
         return $newSchedule;
     }
 
+    /**
+     * add task to processor
+     */
     private function addToPRC($prc, $gens)
     {
         $flash = 0;
-        $flag = FALSE;
-        if(count($gens)==0){
+        $flag  = FALSE;
+        if(count($gens)==0){ // if it is initial node so there is no cross over
             $flag = TRUE;
         }
         for($i=0;$flag==FALSE;$i++){
@@ -295,7 +322,7 @@ class SimulatedAnnealing
                 $X = $gens[$flash];
                 $prc[$i] = $X;
                 $flash++;
-                if(count($gens)<=$flash){
+                if(count($gens)<=$flash){ // if cross over candidate placed in list
                     $flag = TRUE;
                 }
             }
@@ -304,6 +331,9 @@ class SimulatedAnnealing
         return $prc;
     }
 
+    /**
+     * return cross over candidates place
+     */
     private function searchCandidPlace($candidate,$string)
     {
         $places = [];
@@ -316,17 +346,21 @@ class SimulatedAnnealing
         return $places;
     }
 
+    /**
+     * get an altered copy of gens
+     * candidates removed from schedules
+     */
     private function getCopy($gens, $candidate)
     {
         $copy = $gens;
-        foreach($copy as $gi=>$gen){
+        foreach($copy as $gi=>$gen){ // foreach schedule
             if(isset($gen["makespan"])){
                 unset($gen["makespan"]);
             }
-            foreach($gen as $pi=>$prc){
-                foreach($prc as $ti=>$task){
+            foreach($gen as $pi=>$prc){// foreach processor
+                foreach($prc as $ti=>$task){// foreach task
                     if(in_array($task,$candidate)){
-                        unset($copy[$gi][$pi][$ti]);
+                        unset($copy[$gi][$pi][$ti]); // remove candid task from list
                     }
                 }
             }
@@ -334,6 +368,9 @@ class SimulatedAnnealing
         return $copy;
     }
 
+    /**
+     * get some node for cross over
+     */
     private function getCrossCandidates($pred,$dag)
     {
         $candidate    = [];
@@ -345,6 +382,10 @@ class SimulatedAnnealing
         return $candidate;
     }
 
+    /**
+     * get makespan of an schedule
+     * if schedule cant be run then makespan will be false
+     */
     private function getMakespan($schedule, $dag)
     {
         $makespan           = 0;
@@ -354,6 +395,7 @@ class SimulatedAnnealing
             return false;
         }
 
+        // get last finished process
         foreach($selectedProccessor as $task){
             if($task["eft"] > $makespan){
                 $makespan = $task["eft"];
@@ -362,6 +404,9 @@ class SimulatedAnnealing
         return $makespan;
     }
 
+    /**
+     * test the passed schedule
+     */
     private function makeSchedule($schedule, $dag)
     {
         $done               = [];
@@ -372,6 +417,7 @@ class SimulatedAnnealing
             unset($schedule["makespan"]);
         }
 
+        // reorder the schedule (for array key gaps remove)
         $newSchedule = [];
         for($i=0;$i<count($schedule);$i++){
             $newSchedule[$i] = [];
@@ -392,6 +438,7 @@ class SimulatedAnnealing
 
         $schedule = $newSchedule;
 
+        // run schedule and get makespan
         $loopLimiter = 0;
         for ($i = 0; $i < count($dag);){
             if($loopLimiter > count($dag)*count($schedule)){
@@ -404,7 +451,7 @@ class SimulatedAnnealing
                     if (in_array($task, $done)) {
                         $allowed = FALSE;
                     } else {
-                        foreach ($dag[$task]->predeccessor as $pre) {
+                        foreach ($dag[$task]->predeccessor as $pre) { // calculate EST
                             if (!in_array($pre["target"], $done)) {
                                 $allowed = FALSE;
                             } else {
@@ -420,7 +467,7 @@ class SimulatedAnnealing
                             }
                         }
                     }
-                    if ($allowed != FALSE) {
+                    if ($allowed != FALSE) { // calculate EFT
                         $selectedProccessor[$task]["eft"] = $EST + $dag[$task]->weight[$num];
                         $selectedProccessor[$task]["task"] = $task;
                         $selectedProccessor[$task]["processor"] = $num;
@@ -504,6 +551,9 @@ class SimulatedAnnealing
         return $flag;
     }
 
+    /**
+     * remove gap between array keys 
+     */
     private function reorderArray()
     {
 	    $i = 0;
@@ -516,6 +566,9 @@ class SimulatedAnnealing
         }
     }
     
+    /**
+     * change schedule format
+     */
     private function normalize($schedule)
     {
         $normal = [0=>[],1=>[]];
