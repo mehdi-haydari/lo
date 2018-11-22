@@ -23,7 +23,7 @@ class DAG {
     public $maximumWeight    = 50;
     public $proccessorsCount = 2;
     private $tree            = array();
-    private $remain          = 10;
+    private $remain          = 100;
     private $multyExit       = FALSE;
     private $currentLevel    = 0;
     private $multyEntrance   = FALSE;

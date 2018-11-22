@@ -8,10 +8,9 @@ class SimulatedAnnealing
 {
     public $temprature       = 1;   //initial temorature
 	public $maxPopulation    = 80;
-	public $cp               = 0.9;  //neighbore selection probablity
-	public $mp               = 0.6;  //mutation probablity
-	public $restarting       = 100;  
-    public $tempureReduction = 0.06;
+	public $cp               = 0.8;  //neighbore selection probablity
+	public $mp               = 0.5;  //mutation probablity
+    public $tempureReduction = 0.07;
     private $population      = [];
     private $bestSolution    = [];
     private $mainSolution    = [];
@@ -59,7 +58,13 @@ class SimulatedAnnealing
             $this->temprature = $this->temprature - $this->tempureReduction;
         }
 
-        return $this->makeSchedule(sortArrayByMakespan($this->population)[0],$dag);
+        $last = $this->makeSchedule(sortArrayByMakespan($this->population)[0],$dag);
+
+        if(($ct != null) && ($last[count($last) - 1] > $ct[0][count($ct[0]) - 1])){
+            return $ct[0];
+        }
+
+        return $last;
 	}
 
     /**

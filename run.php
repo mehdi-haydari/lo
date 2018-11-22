@@ -3,7 +3,7 @@
 //Uncomment in production
 error_reporting(1); //disable error and warning reporting
 ini_set('memory_limit', '-1'); //endless memory available
-ini_set('max_execution_time', 60); //300 seconds = 5 minutes
+ini_set('max_execution_time', 400); //300 seconds = 5 minutes
 
 include 'DAG.php';
 include 'Task.php';
@@ -16,7 +16,10 @@ include 'EFTSelection.php';
 include 'CrossThreshold.php';
 include 'SimulatedAnnealing.php';
 
+$nodes = $_GET["node"];
+
 $dag  = new DAG();
+$dag->totalTask = $nodes;
 $tree = $dag->makeTree();
 
 // get heft schedule
@@ -39,8 +42,13 @@ $cschedule = $ct->runSchedule($tree, $readyList);
 $sa       = new SimulatedAnnealing();
 $schedule = $sa->getSchedule($tree,[$cschedule]);
 
+// calculate with simulated annealing without ct input
+$saw       = new SimulatedAnnealing();
+$wschedule = $saw->getSchedule($tree);
+
 echo '{
-    "heft": '.$hschedule[99]['eft'].',
-    "ct": '.  $cschedule[99]['eft'].',
-    "sa": '.  $schedule[99]['eft'].'
+    "heft": '.$hschedule[count($hschedule) - 1]['eft'].',
+    "ct": ' . $cschedule[count($cschedule) - 1]['eft'].',
+    "saw": '. $wschedule[count($wschedule) - 1]['eft'].',
+    "sa": '.  $schedule[count($schedule) - 1]['eft'].'
 }';
